@@ -254,13 +254,23 @@ else
     fatal "Could not find latest sdcadm version with tritonnfs support"
 fi
 
+echo "Enabling experimental VOLAPI service"
+sdcadm experimental volapi
+
 upgrade_core_service_to_latest_branch_image "sdc" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "workflow" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "vmapi" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "docker" "tritonnfs"
+# The VOLAPI service may have been already enabled by "sdcadm experimental
+# volapi" but the VOLAPI zone may need to be updated to the latest version.
+upgrade_core_service_to_latest_branch_image "volapi" "tritonnfs"
 
-echo "Enabling experimental VOLAPI service"
-sdcadm experimental volapi
+echo "Running other experimental migration processes"
+# "sdcadm experimental update-other" takes care of doing things such as adding a
+# VOLAPI_SERVICE key in the sdc's SAPI application metadata, running VMAPI
+# migrations, etc., which are not done by "sdcadm experimental volapi", so this
+# needs to be run every time to make sure everything is up to date.
+sdcadm experimental update-other
 
 echo "Restarting sdc-docker to account for configuration changes..."
 /opt/smartdc/bin/sdc-login -l docker svcadm restart config-agent
